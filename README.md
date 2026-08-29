@@ -24,9 +24,48 @@
             background-color: var(--panel-bg); box-shadow: 0 0 15px rgba(0, 255, 102, 0.1);
             padding: 10px; box-sizing: border-box;
         }
-        canvas {
-            display: block; background-color: #000000; border: 1px solid #00441a;
+        
+        /* NOVO PAINEL DE SIMULAÇÃO USANDO APENAS ELEMENTOS HTML/CSS REALISTAS */
+        #arenaTactica {
+            width: 780px; height: 430px; background-color: #020503;
+            position: relative; overflow: hidden; border: 1px solid #00441a;
         }
+        #camada-ceu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 200px; background-color: #020604;
+        }
+        #camada-mar {
+            position: absolute; top: 200px; left: 0; width: 100%; height: 230px; background-color: #0c1424;
+            border-top: 2px solid var(--neon-green);
+        }
+
+        /* OBJETOS FÍSICOS DA SIMULAÇÃO */
+        #submarino {
+            position: absolute; width: 95px; height: 20px; background-color: #1b2621;
+            border: 1px solid var(--neon-green); left: 60px; top: 340px; transition: top 0.2s linear;
+        }
+        #submarino-vela {
+            position: absolute; width: 18px; height: 8px; background-color: #1b2621;
+            border: 1px solid var(--neon-green); border-bottom: none; left: 40px; top: -9px;
+        }
+        #mhd-rastro {
+            position: absolute; width: 25px; height: 6px; background-color: #006633; left: -26px; top: 7px;
+        }
+        #caca {
+            position: absolute; width: 25px; height: 12px; background-color: #332222;
+            border: 1px solid var(--alert-red); left: -40px; top: 50px;
+        }
+        #bunker {
+            position: absolute; width: 90px; height: 40px; background-color: #0d1310;
+            border: 1px solid var(--alert-red); right: 10px; top: 160px; text-align: center; font-size: 8px; color: var(--alert-red);
+        }
+        .missil-sams {
+            position: absolute; width: 6px; height: 6px; background-color: #ffaa00; border-radius: 50%;
+        }
+        .missil-hiper {
+            position: absolute; width: 8px; height: 3px; background-color: #ffffff; box-shadow: 0 0 8px #ff3333;
+        }
+
+        /* PAINEL DE BOTÕES */
         .painel-botoes {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px;
         }
@@ -40,6 +79,7 @@
         .btn-alerta { border-color: var(--alert-red); color: var(--alert-red); background: #200000; }
         .btn-alerta:hover { background: var(--alert-red); color: #000; box-shadow: 0 0 10px var(--alert-red); }
         
+        /* PAINEL MATEMÁTICO */
         .painel-calculos {
             display: flex; flex-direction: column; gap: 15px; font-size: 0.82rem; overflow-y: auto; height: 535px;
         }
@@ -57,10 +97,21 @@
 
     <div id="painel-global">
         
-        <!-- VISUALIZADOR GRÁFICO DA SIMULAÇÃO + BOTÕES -->
+        <!-- VISUALIZADOR DA SIMULAÇÃO (HTML PURO) + BOTÕES -->
         <div>
             <div class="modulo-tela">
-                <canvas id="arenaTactica" width="800" height="450"></canvas>
+                <div id="arenaTactica">
+                    <div id="camada-ceu">
+                        <div id="caca"></div>
+                        <div id="bunker"><br>BUNKER HQ</div>
+                    </div>
+                    <div id="camada-mar">
+                        <div id="submarino">
+                            <div id="submarino-vela"></div>
+                            <div id="mhd-rastro"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="painel-botoes">
@@ -111,92 +162,50 @@
     </div>
 
     <script>
-        // Garante a execução somente após o carregamento completo do layout
         window.onload = function() {
-            const canvas = document.getElementById("arenaTactica");
-            const ctx = canvas.getContext("2d");
+            // Referências HTML estáveis dos objetos físicos
+            const elSub = document.getElementById("submarino");
+            const elRastro = document.getElementById("mhd-rastro");
+            const elCaca = document.getElementById("caca");
+            const elBunker = document.getElementById("bunker");
+            const arena = document.getElementById("arenaTactica");
 
-            const CAMADA_OCEANO = 200;
-
-            // Submarino
-            const submarino = {
-                x: 60, y: 340, largura: 95, altura: 20, velX: 0.8, tesla: 1.5, correnteJ: 450
-            };
-
+            // Estado Inicial das Variáveis Físicas e Geográficas
+            let subX = 60;
+            let subY = 340; // Coordenada de Profundidade inicial
+            let velX = 0.8;
+            let tesla = 1.5;
+            let correnteJ = 450;
             let mhdAltaPotencia = false;
             let srosElevado = false;
-            let vetorSams = [];
-            let vetorHipersonico = [];
 
-            const cacaInimigo = { x: -50, y: 50, vel: 2.5, operacional: true, abatido: false, angulo: 0 };
-            const alvoContinente = { x: 710, y: CAMADA_OCEANO - 40, w: 90, h: 40, neutralizado: false };
+            let cacaX = -40;
+            let cacaY = 50;
+            let cacaAbatido = false;
 
-            // Atribuição segura dos botões via JavaScript puro (Evita erros de escopo HTML)
+            // Arrays para controle dos mísseis na tela
+            let listaSams = [];
+            let listaHiper = [];
+
+            // --- LÓGICA DE INTERAÇÃO DOS BOTÕES ---
             document.getElementById("btn-elevar").onclick = function() {
-                submarino.y -= 15;
-                if (submarino.y < CAMADA_OCEANO + 5) submarino.y = CAMADA_OCEANO + 5;
+                subY -= 20;
+                if (subY < 205) subY = 205; // Limite da superfície da água
+                elSub.style.top = subY + "px";
             };
 
             document.getElementById("btn-submergir").onclick = function() {
-                submarino.y += 15;
-                if (submarino.y > canvas.height - 30) submarino.y = canvas.height - 30;
+                subY += 20;
+                if (subY > 400) subY = 400; // Limite do fundo do mar
+                elSub.style.top = subY + "px";
             };
 
             document.getElementById("btn-mhd").onclick = function() {
                 mhdAltaPotencia = !mhdAltaPotencia;
                 if(mhdAltaPotencia) {
-                    submarino.velX = 3.2; submarino.tesla = 7.8; submarino.correnteJ = 1200;
+                    velX = 3.2; tesla = 7.8; correnteJ = 1200;
+                    elRastro.style.backgroundColor = "#00ffff";
+                    elRastro.style.width = "40px";
+                    elRastro.style.left = "-41px";
+                    elSub.style.borderColor = "#ff3333";
                 } else {
-                    submarino.velX = 0.8; submarino.tesla = 1.5; submarino.correnteJ = 450;
-                }
-            };
-
-            document.getElementById("btn-sros").onclick = function() {
-                if(submarino.y <= CAMADA_OCEANO + 30) {
-                    srosElevado = !srosElevado;
-                }
-            };
-
-            document.getElementById("btn-sams").onclick = function() {
-                if (submarino.y <= CAMADA_OCEANO + 45 && cacaInimigo.operacional && !cacaInimigo.abatido) {
-                    vetorSams.push({ x: submarino.x + 45, y: submarino.y, vx: 2.2, vy: -5.5 });
-                }
-            };
-
-            document.getElementById("btn-hiper").onclick = function() {
-                if (submarino.y <= CAMADA_OCEANO + 15) {
-                    vetorHipersonico.push({ x: submarino.x + 20, y: submarino.y, vx: 0.7, vy: -6, mach: 1, rastro: [] });
-                }
-            };
-
-            function simularEComputar() {
-                // Atualizações de texto (Módulo Matemático)
-                let fLorentz = submarino.correnteJ * submarino.tesla * 1.5; 
-                document.getElementById("calc-mhd-j").innerText = submarino.correnteJ + " A/m²";
-                document.getElementById("calc-mhd-b").innerText = submarino.tesla + " T";
-                document.getElementById("calc-mhd-f").innerText = fLorentz.toFixed(1) + " N";
-
-                let profMetros = (submarino.y - CAMADA_OCEANO) * 1.8;
-                let pressaoMpa = (1000 * 9.81 * profMetros) / 1000000;
-                document.getElementById("calc-geo-y").innerText = submarino.y + " px";
-                document.getElementById("calc-geo-p").innerText = pressaoMpa.toFixed(2) + " MPa";
-
-                // RENDERIZAÇÃO GRÁFICA SEM ERROS (Cores sólidas e estáveis)
-                // 1. Céu / Atmosfera
-                ctx.fillStyle = "#020604"; 
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // 2. Oceano Profundo
-                ctx.fillStyle = "#0c1424"; 
-                ctx.fillRect(0, CAMADA_OCEANO, canvas.width, canvas.height - CAMADA_OCEANO);
-                
-                // 3. Linha de Superfície
-                ctx.strokeStyle = "#00ff66"; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(0, CAMADA_OCEANO); ctx.lineTo(canvas.width, CAMADA_OCEANO); ctx.stroke();
-
-                // Movimentação do Submarino
-                submarino.x += submarino.velX;
-                if (submarino.x > canvas.width - 200) submarino.x = 20;
-
-                // Propulsão MHD Visual
-                if (mhdAltaPotencia) {
