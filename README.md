@@ -2,196 +2,200 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Console de Telemetria e Simulação Tática - MHD / SAMS / SROS</title>
+    <title>Console de Engenharia e Simulação Tática - Submarinos</title>
     <style>
+        :root {
+            --neon-green: #00ff66;
+            --neon-blue: #00ffff;
+            --alert-red: #ff3333;
+            --panel-bg: #030805;
+        }
         body {
             margin: 0; padding: 20px;
-            background-color: #030806; color: #00ff66;
+            background-color: #010402; color: var(--neon-green);
             font-family: 'Consolas', 'Courier New', monospace;
             display: flex; flex-direction: column; align-items: center;
         }
-        #painel-superior {
-            width: 950px; display: grid; grid-template-columns: repeat(3, 1fr);
-            gap: 15px; margin-bottom: 15px;
+        #painel-global {
+            display: grid; grid-template-columns: 800px 380px; gap: 20px; width: 1200px;
         }
-        .bloco-dados {
-            background: rgba(0, 40, 20, 0.4);
-            border: 1px solid #00aa44; border-radius: 4px; padding: 10px;
+        /* Painéis e Telas */
+        .modulo-tela {
+            border: 2px solid var(--neon-green); border-radius: 4px;
+            background-color: var(--panel-bg); box-shadow: 0 0 15px rgba(0, 255, 102, 0.1);
+            padding: 10px; box-sizing: border-box;
         }
-        .titulo-bloco { font-weight: bold; border-bottom: 1px solid #00aa44; padding-bottom: 4px; margin-bottom: 8px; color: #00ffbc;}
-        .valor-telemetria { color: #ffffff; }
-        #canvas-container { border: 2px solid #00ff66; background-color: #010402; }
-        .controles-simulacao { margin-top: 10px; width: 950px; text-align: left; font-size: 0.85rem; color: #88aa88;}
+        canvas {
+            display: block; background-color: #000201; border: 1px solid #00441a;
+            width: 100%; height: 450px;
+        }
+        /* Painel de Controle e Botões */
+        .painel-botoes {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px;
+        }
+        button {
+            background: #00220d; border: 1px solid var(--neon-green); color: var(--neon-green);
+            padding: 12px; font-family: 'Consolas', monospace; font-weight: bold; cursor: pointer;
+            border-radius: 3px; font-size: 0.85rem; text-transform: uppercase; transition: all 0.2s;
+        }
+        button:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 10px var(--neon-green); }
+        button:active { transform: scale(0.98); }
+        .btn-alerta { border-color: var(--alert-red); color: var(--alert-red); background: #200000; }
+        .btn-alerta:hover { background: var(--alert-red); color: #000; box-shadow: 0 0 10px var(--alert-red); }
+        
+        /* Monitor de Cálculos Matemáticos */
+        .painel-calculos {
+            display: flex; flex-direction: column; gap: 15px; font-size: 0.82rem; overflow-y: auto; height: 535px;
+        }
+        .bloco-formula {
+            border-left: 3px solid var(--neon-blue); padding-left: 10px; margin-bottom: 5px;
+            background: rgba(0, 242, 255, 0.03); padding: 8px; border-radius: 0 4px 4px 0;
+        }
+        .formula-matematica { color: #fff; font-style: italic; margin: 4px 0; font-size: 0.9rem;}
+        .resultado-dinamico { color: var(--neon-blue); font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- TELEMETRIA DE DADOS DOS SISTEMAS -->
-    <div id="painel-superior">
-        <div class="bloco-dados">
-            <div class="titulo-bloco">PROPULSÃO MHD (MAGNÉTICA)</div>
-            <div>STATUS: <span class="valor-telemetria" id="mhd-status">Furtivo (Baixo Ruído)</span></div>
-            <div>CAMP. MAGNÉTICO: <span class="valor-telemetria" id="mhd-tesla">1.5 Tesla</span></div>
-            <div>EFICIÊNCIA FLUIDO: <span class="valor-telemetria">32% (Lorentz)</span></div>
-        </div>
-        <div class="bloco-dados">
-            <div class="titulo-bloco">DEFESA S.A.M.S. & HIPERSÔNICO</div>
-            <div>SAMS PRONTO: <span class="valor-telemetria" id="sams-status">Aguardando Prof. Periscópio</span></div>
-            <div>MÍSSIL HIPERSÔNICO: <span class="valor-telemetria" id="missil-status">Pronto (Tubo 01)</span></div>
-            <div>ASSINATURA TÉRMICA: <span class="valor-telemetria" id="plasma-status">0 MW</span></div>
-        </div>
-        <div class="bloco-dados">
-            <div class="titulo-bloco">DIAGNÓSTICO SROS (OPTRÔNICO)</div>
-            <div>MAST STATUS: <span class="valor-telemetria" id="sros-status">Retraído (Submerso)</span></div>
-            <div>ALVOS TRAVADOS: <span class="valor-telemetria" id="sros-targets">0/2</span></div>
-            <div>FEIXE LASER: <span class="valor-telemetria">Multiespectral IR</span></div>
-        </div>
-    </div>
+    <h2 style="margin: 0 0 15px 0; letter-spacing: 2px; text-transform: uppercase; font-size: 1.3rem;">Sistemas Militares de Operações Subterrâneas e Superfície</h2>
 
-    <!-- ÁREA DA SIMULAÇÃO CIENTÍFICA -->
-    <div id="canvas-container">
-        <canvas id="arenaTactica" width="950" height="500"></canvas>
-    </div>
+    <div id="painel-global">
+        
+        <!-- COLUNA ESQUERDA: VISUALIZADOR GRÁFICO DA SIMULAÇÃO + BOTÕES -->
+        <div>
+            <div class="modulo-tela">
+                <canvas id="arenaTactica" width="800" height="450"></canvas>
+            </div>
+            
+            <!-- CONTROLES VIA BOTÕES CLICÁVEIS -->
+            <div class="painel-botoes">
+                <button onclick="alterarProfundidade(-1.5)">▲ Elevar Submarino</button>
+                <button onclick="alternarMhd()">Alternar Propulsão MHD</button>
+                <button onclick="dispararSams()">Disparar S.A.M.S.</button>
+                <button onclick="alterarProfundidade(1.5)">▼ Submergir Submarino</button>
+                <button onclick="alternarSros()">Alternar Mastro SROS</button>
+                <button class="btn-alerta" onclick="dispararHipersonico()">Lançar Hipersônico</button>
+            </div>
+        </div>
 
-    <div class="controles-simulacao">
-        <strong>COMANDOS DO OPERADOR:</strong> W/S: Alterar Profundidade | 
-        Teclado [A]: Alternar Potência MHD (Furtivo vs Alta Velocidade) | 
-        Teclado [R]: Elevar/Retrair Mastro SROS | 
-        Teclado [F]: Disparar S.A.M.S. (Contra Aeronave) | 
-        Teclado [H]: Disparar Míssil Hipersônico (Contra a Infraestrutura)
+        <!-- COLUNA DIREITA: MEMORIAL DE CÁLCULO SÍNCRONO EM TEMPO REAL -->
+        <div class="modulo-tela painel-calculos">
+            <h3 style="margin: 0; color: var(--neon-blue); border-bottom: 1px solid var(--neon-blue); padding-bottom: 5px;">MÓDULO MATEMÁTICO (SÍNCRONO)</h3>
+            
+            <!-- CÁLCULOS PROPULSÃO MHD -->
+            <div class="bloco-formula">
+                <strong>[MHD] EQUAÇÃO DA FORÇA DE LORENTZ</strong>
+                <div class="formula-matematica">F_L = J × B • V</div>
+                <div>Densidade Corrente (J): <span id="calc-mhd-j">450 A/m²</span></div>
+                <div>Indução Magnética (B): <span id="calc-mhd-b">1.5 T</span></div>
+                <div>Força Resultante Real: <span class="resultado-dinamico" id="calc-mhd-f">1012.5 N</span></div>
+            </div>
+
+            <!-- CÁLCULOS VETOR HIPERSÔNICO -->
+            <div class="bloco-formula" style="border-left-color: var(--alert-red); background: rgba(255,51,51,0.03);">
+                <strong>[HIPERSÔNICO] TERMODINÂMICA DE FLUXO</strong>
+                <div class="formula-matematica">T_0 = T_∞ • (1 + ((γ - 1)/2) • M²)</div>
+                <div>Regime de Velocidade: <span id="calc-m-mach">Mach 1.0</span></div>
+                <div>Razão de Calores (γ): <span>1.40 (Ar Atmosférico)</span></div>
+                <div>Temp. Estagnação Flutuante: <span class="resultado-dinamico" id="calc-m-temp">288.1 K</span></div>
+            </div>
+
+            <!-- CÁLCULOS DETECÇÃO ÓPTICA SROS -->
+            <div class="bloco-formula">
+                <strong>[SROS] RESOLUÇÃO DE SENSORES MULTIESPECTRAIS</strong>
+                <div class="formula-matematica">θ = 1.22 • (λ / D)</div>
+                <div>Comprimento de Onda (λ): <span>4.5 µm (Invermelho Médio)</span></div>
+                <div>Abertura da Lente (D): <span>0.18 m</span></div>
+                <div>Limite Difração Angular: <span class="resultado-dinamico" id="calc-sros-theta">0.0000305 rad</span></div>
+            </div>
+
+            <!-- CÁLCULOS TELEMETRIA GERAL -->
+            <div class="bloco-formula" style="border-left-color: var(--neon-green); background: rgba(0,255,102,0.03);">
+                <strong>[TELEMETRIA] HIDROSTÁTICA E COORDENADAS</strong>
+                <div>Eixo Profundidade (Y-Raw): <span id="calc-geo-y">360px</span></div>
+                <div>Pressão Hidrostática (P): <span class="resultado-dinamico" id="calc-geo-p">2.45 MPa</span></div>
+            </div>
+        </div>
+
     </div>
 
     <script>
         const canvas = document.getElementById("arenaTactica");
         const ctx = canvas.getContext("2d");
 
-        // Elementos DOM para atualização de Telemetria Real
-        const eMhdStatus = document.getElementById("mhd-status");
-        const eMhdTesla = document.getElementById("mhd-tesla");
-        const eSamsStatus = document.getElementById("sams-status");
-        const eMissilStatus = document.getElementById("missil-status");
-        const ePlasmaStatus = document.getElementById("plasma-status");
-        const eSrosStatus = document.getElementById("sros-status");
-        const eSrosTargets = document.getElementById("sros-targets");
+        // Definição física de fronteira (Meio Fluido a 200px do topo)
+        const CAMADA_OCEANO = 200;
 
-        // Variáveis de Ambiente e Coordenadas Geográficas da Simulação
-        const CAMADA_OCEANO = 220;
-        let mhdAltaPotencia = false;
-        let srosElevado = false;
-
-        const inputs = { w: false, s: false };
-        window.addEventListener("keydown", (e) => {
-            if(e.key.toLowerCase() === 'w') inputs.w = true;
-            if(e.key.toLowerCase() === 's') inputs.s = true;
-            
-            // Alternar Modo de Indução do Propulsor MHD
-            if(e.key.toLowerCase() === 'a') {
-                mhdAltaPotencia = !mhdAltaPotencia;
-                if(mhdAltaPotencia) {
-                    submarino.velocidadeX = 3.5;
-                    eMhdStatus.innerText = "VELOCIDADE MÁXIMA (Alerta MAD)";
-                    eMhdStatus.style.color = "#ff3333";
-                    eMhdTesla.innerText = "7.8 Tesla";
-                } else {
-                    submarino.velocidadeX = 1.0;
-                    eMhdStatus.innerText = "Furtivo (Baixo Ruído)";
-                    eMhdStatus.style.color = "#00ff66";
-                    eMhdTesla.innerText = "1.5 Tesla";
-                }
-            }
-
-            // Alternar Elevação do Mastro Optrônico SROS
-            if(e.key.toLowerCase() === 'r') {
-                if(submarino.y <= CAMADA_OCEANO + 25) { // Só eleva próximo à superfície
-                    srosElevado = !srosElevado;
-                    eSrosStatus.innerText = srosElevado ? "ELEVADO - ESCANEANDO" : "RETRAÍDO";
-                    eSrosStatus.style.color = srosElevado ? "#00ff66" : "#ffffff";
-                }
-            }
-
-            // Ativação do Sistema S.A.M.S.
-            if(e.key.toLowerCase() === 'f' && submarino.y <= CAMADA_OCEANO + 40) {
-                if(cacaInimigo.operacional) {
-                    vetorSams.push({ x: submarino.x + 40, y: submarino.y, vx: 2, vy: -5, ativo: true });
-                    eSamsStatus.innerText = "LANÇADO / TRAVADO IR";
-                    eSamsStatus.style.color = "#ffaa00";
-                }
-            }
-
-            // Disparo de Vetor Estratégico Hipersônico
-            if(e.key.toLowerCase() === 'h' && submarino.y <= CAMADA_OCEANO + 15) {
-                vetorHipersonico.push({ x: submarino.x + 20, y: submarino.y, vx: 0.8, vy: -6, mach: 1, rastro: [] });
-                eMissilStatus.innerText = "EM VOO - CRUISE PHASE";
-                eMissilStatus.style.color = "#ff3333";
-            }
-        });
-
-        window.addEventListener("keyup", (e) => {
-            if(e.key.toLowerCase() === 'w') inputs.w = false;
-            if(e.key.toLowerCase() === 's') inputs.s = false;
-        });
-
-        // Configurações Físicas do Submarino Operacional
+        // Configurações do Submarino de Combate
         const submarino = {
-            x: 70, y: 380, largura: 85, altura: 18, velocidadeX: 1.0, velocidadeY: 1.2
+            x: 60, y: 340, largura: 95, altura: 20, velX: 0.8, tesla: 1.5, correnteJ: 450
         };
 
-        // Alvos de Teste dos Algoritmos de Combate
-        const cacaInimigo = { x: -40, y: 60, vel: 2.2, operacional: true, abatido: false, anguloQueda: 0 };
-        const qgInimigo = { x: 840, y: CAMADA_OCEANO - 50, largura: 110, altura: 50, destruido: false };
-
-        // Vetores Dinâmicos
+        // Estados e Vetores do Sistema
+        let mhdAltaPotencia = false;
+        let srosElevado = false;
         let vetorSams = [];
         let vetorHipersonico = [];
 
-        function renderizarAlgoritmo() {
-            // Limpeza e Atualização Dinâmica da Atmosfera/Água
-            ctx.fillStyle = "#020503"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Renderizar Meio Aquático (Densidade sonar)
-            ctx.fillStyle = "rgba(0, 20, 35, 0.6)";
-            ctx.fillRect(0, CAMADA_OCEANO, canvas.width, canvas.height - CAMADA_OCEANO);
-            
-            // Interface Físico-Química da Água (Superfície)
-            ctx.strokeStyle = "rgba(0, 255, 180, 0.4)"; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(0, CAMADA_OCEANO); ctx.lineTo(canvas.width, CAMADA_OCEANO); ctx.stroke();
+        // Elementos do Cenário Operacional
+        const cacaInimigo = { x: -50, y: 50, vel: 2.5, operacional: true, abatido: false, angulo: 0 };
+        const alvoContinente = { x: 710, y: CAMADA_OCEANO - 40, w: 90, h: 40, neutralizado: false };
 
-            // --- CÁLCULO DE MOVIMENTO DO SUBMARINO ---
-            if (inputs.w && submarino.y > CAMADA_OCEANO + 8) submarino.y -= submarino.velocidadeY;
-            if (inputs.s && submarino.y < canvas.height - 30) submarino.y += submarino.velocidadeY;
-            submarino.x += submarino.velocidadeX;
-            if (submarino.x > canvas.width - 200) submarino.x = 40; // Mantém em órbita de teste espacial
+        // --- FUNÇÕES DE CONTROLE DE BOTÕES ---
+        function alterarProfundidade(valor) {
+            submarino.y += valor * 10;
+            // Limitações físicas do casco
+            if (submarino.y < CAMADA_OCEANO + 5) submarino.y = CAMADA_OCEANO + 5;
+            if (submarino.y > canvas.height - 30) submarino.y = canvas.height - 30;
+        }
 
-            // --- MODELAGEM DOS SISTEMAS ---
-            
-            // 1. PROPULSÃO MHD: Rastro Térmico-Elétrico Sem Cavitação Mecânica
-            if (mhdAltaPotencia) {
-                // Em alta potência, o empuxo Lorentz gera ionização detectável na água
-                ctx.fillStyle = "rgba(0, 255, 255, 0.2)";
-                ctx.fillRect(submarino.x - 40, submarino.y + 4, 40, 8);
-                // Desenhar linhas de indução do campo magnético
-                ctx.strokeStyle = "rgba(255, 50, 50, 0.4)";
-                ctx.strokeRect(submarino.x, submarino.y - 5, submarino.largura, submarino.altura + 10);
+        function alternarMhd() {
+            mhdAltaPotencia = !mhdAltaPotencia;
+            if(mhdAltaPotencia) {
+                submarino.velX = 3.2; submarino.tesla = 7.8; submarino.correnteJ = 1200;
             } else {
-                // Em baixo ruído, o rastro magnético é contido
-                ctx.fillStyle = "rgba(0, 255, 100, 0.08)";
-                ctx.fillRect(submarino.x - 20, submarino.y + 6, 20, 4);
+                submarino.velX = 0.8; submarino.tesla = 1.5; submarino.correnteJ = 450;
             }
+        }
 
-            // Desenhar Estrutura do Submarino
-            ctx.fillStyle = "#1e2522"; ctx.strokeStyle = "#00ff66"; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.roundRect(submarino.x, submarino.y, submarino.largura, submarino.altura, 6);
-            ctx.fill(); ctx.stroke();
-            ctx.fillRect(submarino.x + 35, submarino.y - 10, 16, 10); // Vela do Casco
+        function alternarSros() {
+            if(submarino.y <= CAMADA_OCEANO + 30) {
+                srosElevado = !srosElevado;
+            }
+        }
 
-            // 2. SISTEMA SROS: Controle do Mastro Optrônico Multi-Espectral
-            if (submarino.y > CAMADA_OCEANO + 25) srosElevado = false; // Retração forçada pela pressão hidrodinâmica
+        function dispararSams() {
+            if (submarino.y <= CAMADA_OCEANO + 45 && cacaInimigo.operacional && !cacaInimigo.abatido) {
+                vetorSams.push({ x: submarino.x + 45, y: submarino.y, vx: 2.2, vy: -5.5 });
+            }
+        }
+
+        function dispararHipersonico() {
+            if (submarino.y <= CAMADA_OCEANO + 15) {
+                vetorHipersonico.push({ x: submarino.x + 20, y: submarino.y, vx: 0.7, vy: -6, mach: 1, rastro: [] });
+            }
+        }
+
+        // --- MOTOR DE PROCESSAMENTO E ATUALIZAÇÃO SÍNCRONA (60 FPS) ---
+        function simularEComputar() {
+            // 1. ATUALIZAÇÃO DA INTERFACE DE CÁLCULO REAL/SÍNCRONE
+            // Cálculo da Força de Lorentz (MHD)
+            let fLorentz = submarino.correnteJ * submarino.tesla * 1.5; // Vol fictício de 1.5m³
+            document.getElementById("calc-mhd-j").innerText = `${submarino.correnteJ} A/m²`;
+            document.getElementById("calc-mhd-b").innerText = `${submarino.tesla} T`;
+            document.getElementById("calc-mhd-f").innerText = `${fLorentz.toFixed(1)} N`;
+
+            // Cálculo da Pressão Hidrostática Baseada no Sensor de Profundidade
+            let profMetros = (submarino.y - CAMADA_OCEANO) * 1.8;
+            let pressaoMpa = (1000 * 9.81 * profMetros) / 1000000;
+            document.getElementById("calc-geo-y").innerText = `${submarino.y} px`;
+            document.getElementById("calc-geo-p").innerText = `${pressaoMpa.toFixed(2)} MPa`;
+
+            // 2. RENDERIZAÇÃO DA IMAGEM E ELEMENTOS GRÁFICOS NO CANVAS
+            // Limpa canvas e desenha a estratosfera/céu
+            ctx.fillStyle = "#010502"; ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            if (srosElevado) {
-                ctx.strokeStyle = "#00ffff"; ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(submarino.x + 43, submarino.y - 10);
-                ctx.lineTo(submarino.x + 43, CAMADA_OCEANO - 12); // Projeção acima da água
-                ctx.stroke();
-                
-                // Sensor Optrônico SROS emitindo varredura passiva infravermelha
+            // Renderiza o meio aquático (Oceano Profundo)
+            ctx.fillStyle = "rgba(1, 15, 32, 0.7)"; ctx.fillRect(0, CAMADA_OCEANO, canvas.width, canvas.height - CAMADA_OCEANO);
+            
+            // Desenha a linha divisória da superfície marítima
