@@ -27,7 +27,7 @@
         }
         canvas {
             display: block; background-color: #000201; border: 1px solid #00441a;
-            width: 100%; height: 450px;
+            width: 800px; height: 450px;
         }
         /* Painel de Controle e Botões */
         .painel-botoes {
@@ -112,7 +112,7 @@
             <!-- CÁLCULOS TELEMETRIA GERAL -->
             <div class="bloco-formula" style="border-left-color: var(--neon-green); background: rgba(0,255,102,0.03);">
                 <strong>[TELEMETRIA] HIDROSTÁTICA E COORDENADAS</strong>
-                <div>Eixo Profundidade (Y-Raw): <span id="calc-geo-y">360px</span></div>
+                <div>Eixo Profundidade (Y-Raw): <span id="calc-geo-y">340px</span></div>
                 <div>Pressão Hidrostática (P): <span class="resultado-dinamico" id="calc-geo-p">2.45 MPa</span></div>
             </div>
         </div>
@@ -179,23 +179,28 @@
         // --- MOTOR DE PROCESSAMENTO E ATUALIZAÇÃO SÍNCRONA (60 FPS) ---
         function simularEComputar() {
             // 1. ATUALIZAÇÃO DA INTERFACE DE CÁLCULO REAL/SÍNCRONE
-            // Cálculo da Força de Lorentz (MHD)
-            let fLorentz = submarino.correnteJ * submarino.tesla * 1.5; // Vol fictício de 1.5m³
-            document.getElementById("calc-mhd-j").innerText = `${submarino.correnteJ} A/m²`;
-            document.getElementById("calc-mhd-b").innerText = `${submarino.tesla} T`;
-            document.getElementById("calc-mhd-f").innerText = `${fLorentz.toFixed(1)} N`;
+            let fLorentz = submarino.correnteJ * submarino.tesla * 1.5; 
+            document.getElementById("calc-mhd-j").innerText = submarino.correnteJ + " A/m²";
+            document.getElementById("calc-mhd-b").innerText = submarino.tesla + " T";
+            document.getElementById("calc-mhd-f").innerText = fLorentz.toFixed(1) + " N";
 
-            // Cálculo da Pressão Hidrostática Baseada no Sensor de Profundidade
             let profMetros = (submarino.y - CAMADA_OCEANO) * 1.8;
             let pressaoMpa = (1000 * 9.81 * profMetros) / 1000000;
-            document.getElementById("calc-geo-y").innerText = `${submarino.y} px`;
-            document.getElementById("calc-geo-p").innerText = `${pressaoMpa.toFixed(2)} MPa`;
+            document.getElementById("calc-geo-y").innerText = submarino.y + " px";
+            document.getElementById("calc-geo-p").innerText = pressaoMpa.toFixed(2) + " MPa";
 
             // 2. RENDERIZAÇÃO DA IMAGEM E ELEMENTOS GRÁFICOS NO CANVAS
-            // Limpa canvas e desenha a estratosfera/céu
-            ctx.fillStyle = "#010502"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#010502"; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Renderiza o meio aquático (Oceano Profundo)
-            ctx.fillStyle = "rgba(1, 15, 32, 0.7)"; ctx.fillRect(0, CAMADA_OCEANO, canvas.width, canvas.height - CAMADA_OCEANO);
+            ctx.fillStyle = "rgba(1, 15, 32, 0.7)"; 
+            ctx.fillRect(0, CAMADA_OCEANO, canvas.width, canvas.height - CAMADA_OCEANO);
             
-            // Desenha a linha divisória da superfície marítima
+            ctx.strokeStyle = "rgba(0, 255, 150, 0.5)"; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(0, CAMADA_OCEANO); ctx.lineTo(canvas.width, CAMADA_OCEANO); ctx.stroke();
+
+            submarino.x += submarino.velX;
+            if (submarino.x > canvas.width - 200) submarino.x = 20;
+
+            // Renderizar Propulsão MHD
+            if (mhdAltaPotencia) {
